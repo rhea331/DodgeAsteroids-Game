@@ -3,7 +3,7 @@
 Simple android game where you tilt your screen up and down to move your ship to dodge asteroids.
 
 
-##TODO:
+## TODO:
 
 Document code
 
