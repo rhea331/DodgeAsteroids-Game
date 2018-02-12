@@ -11,6 +11,7 @@ Better art (Blue Triangle vs Gray Circles of Doom)
 
 Game does not work if phone is facing straight down due to angle values going from -180 to 180.
 
+Dynamic Ship size
 
 
 ## Possible improvements
