@@ -13,7 +13,7 @@ Game does not work if phone is facing straight down due to angle values going fr
 
 
 
-Possible improvements
+## Possible improvements
 
 Variable acceleration depending on tilt
 
