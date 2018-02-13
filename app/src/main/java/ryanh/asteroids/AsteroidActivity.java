@@ -67,7 +67,7 @@ public class AsteroidActivity extends AppCompatActivity implements SensorEventLi
     }
 
     /**
-     * Invoked whenthe back button is pressed, unregisters the accelerometer.
+     * Invoked when the back button is pressed, unregisters the accelerometer.
      */
     @Override
     public void onBackPressed() {

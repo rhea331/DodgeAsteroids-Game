@@ -17,8 +17,8 @@ class Ship {
 
     /**
      * Constructor. Initializes the x, y co-ordinates and the paint.
-     * @param x
-     * @param y
+     * @param x the x co-ordinate of the ship
+     * @param y the y co-ordinate of the ship
      */
     Ship(int x, int y){
         this.x=x;

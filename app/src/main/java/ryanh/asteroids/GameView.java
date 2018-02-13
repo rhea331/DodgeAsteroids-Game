@@ -164,7 +164,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     /**
      * Where the drawing of the game takes place. Draws background, ship, asteroids, and
      * live/score/ending text.
-     * @param canvas
+     * @param canvas the canvas to draw on
      */
     public void doDraw(Canvas canvas) {
         Paint paint = new Paint();

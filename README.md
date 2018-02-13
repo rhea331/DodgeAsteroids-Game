@@ -5,8 +5,6 @@ Simple android game where you tilt your screen up and down to move your ship to 
 
 ## TODO:
 
-Document code
-
 Better art (Blue Triangle vs Gray Circles of Doom)
 
 Game does not work if phone is facing straight down due to angle values going from -180 to 180.
