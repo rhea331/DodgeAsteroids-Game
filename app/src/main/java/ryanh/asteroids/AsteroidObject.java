@@ -58,8 +58,8 @@ class AsteroidObject {
      * Draws the asteroid
      * @param canvas the canvas where it is to be drawn.
      */
-    void doDraw(Canvas canvas){
-        canvas.drawCircle(x,y, canvas.getHeight()/20, paint);
+    void doDraw(Canvas canvas, int radius){
+        canvas.drawCircle(x,y, radius, paint);
     }
 
 

@@ -22,7 +22,7 @@ public class AsteroidActivity extends AppCompatActivity implements SensorEventLi
 
     GameView mGameView;
 
-    //variables for the angle of the phone.
+    //variables for the phone angle.
     double defaultAngle = 0;
     double xzAngle = 0;
 
@@ -125,8 +125,7 @@ public class AsteroidActivity extends AppCompatActivity implements SensorEventLi
             xzAngle = Math.atan2(aX, aZ)/(Math.PI/180);
             if (mGameView.getState() == GameState.PLAYING){
                 //if playing, determines how far the screen is tilted from the 'default' angle.
-                //PROBLEM: this does not like it when the phone is straight down due to the angle
-                //          changing from -180 to 180.
+                //PROBLEM: this does not like it when the phone is facing straight
                 if (xzAngle < defaultAngle-10){
                     mGameView.moveShip(true);
                 }else if(xzAngle > defaultAngle+10){

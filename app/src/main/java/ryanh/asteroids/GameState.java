@@ -5,6 +5,7 @@ package ryanh.asteroids;
  * Enum for the state of the game, used in AsteroidActivity.java and GameView.java
  */
 public enum GameState {
+    INITIALIZING,
     DEFAULT,
     PLAYING,
     GAMEOVER;
