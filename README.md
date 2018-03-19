@@ -1,5 +1,7 @@
 # DodgeAsteroid  Android Game
 
+![Sample](https://raw.github.com/rhea331/DodgeAsteroids-Game/master/Screenshots/asteroids.png)
+
 Simple android game where you tilt your screen up and down to move your ship to dodge asteroids.
 
 
