@@ -1,5 +1,6 @@
 package ryanh.asteroids;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -8,29 +9,49 @@ import android.graphics.Path;
 /**
  * Ship.java
  * Ship class. Contains the x and y co-ordinates of the ship and drawing of said ship.
- * TODO: dynamic ship size, change drawing to an actual ship
  */
 class Ship {
     private int x;
     private int y;
-    private Paint paint;
-
+    private double speed = 0;
+    private int height;
+    private Bitmap shipStraight;
+    private Bitmap shipUp;
+    private Bitmap shipDown;
+    private static int MAX_SPEED = 4;
     /**
      * Constructor. Initializes the x, y co-ordinates and the paint.
      * @param x the x co-ordinate of the ship
      * @param y the y co-ordinate of the ship
      */
-    Ship(int x, int y){
+    Ship(int x, int y, Bitmap bmp1, Bitmap bmp2, Bitmap bmp3){
         this.x=x;
         this.y=y;
-        paint = new Paint();
-        paint.setColor(Color.BLUE);
+        shipStraight = bmp1;
+        shipUp = bmp2;
+        shipDown = bmp3;
+        this.height = bmp1.getHeight();
+    }
+
+    void update(int canvasHeight){
+        if(y>=0 && y<=canvasHeight) {
+            y += speed;
+        }
+        if (y < 0){
+            y=0;
+            speed = 0;
+        }
+        else if (y>canvasHeight){
+            y=canvasHeight;
+            speed = 0;
+        }
     }
 
     /**
      * Sets the x co-ordinate of the ship
      * @param x the new x co-ordinate
      */
+
     void setX(int x){
         this.x=x;
     }
@@ -43,6 +64,10 @@ class Ship {
         this.y = y;
     }
 
+
+    void setSpeed(double delta){
+        speed = delta * MAX_SPEED;
+    }
     /**
      * Returns the x co-ordinate of the ship
      * @return the x co-ordinate
@@ -64,16 +89,13 @@ class Ship {
      * @param canvas the canvas to be drawn on
      */
     void doDraw(Canvas canvas){
-        int w = canvas.getWidth();
-        int h = canvas.getHeight(); // for when I get around to drawing it dynamically
-
-        Path path = new Path();
-        path.moveTo(x-5, y-5);
-        path.lineTo(x-5, y+5);
-        path.lineTo(x+5, y);
-        path.lineTo(x-5, y-5);
-        path.close();
-        canvas.drawPath(path, paint);
+        if (speed > 1) {
+            canvas.drawBitmap(shipUp, x - (height / 2), y - (height / 2), null);
+        }else if (speed < -1){
+            canvas.drawBitmap(shipDown, x - (height / 2), y - (height / 2), null);
+        }else{
+            canvas.drawBitmap(shipStraight, x - (height / 2), y - (height / 2), null);
+        }
     }
 
 }

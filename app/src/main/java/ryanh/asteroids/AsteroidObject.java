@@ -1,7 +1,9 @@
 package ryanh.asteroids;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 
 /**
@@ -10,18 +12,19 @@ import android.graphics.Paint;
  */
 class AsteroidObject {
     private int x, y;
-    private Paint paint;
+    private int height;
+    private Bitmap image;
 
     /**
      * Constructor to create an asteroid. Sets up the co-ordinates and paint.
      * @param x  the x co-ordinate of the asteroid
      * @param y  the y co-ordinate of the asteroid
      */
-    AsteroidObject(int x, int y){
+    AsteroidObject(int x, int y, int height, Bitmap bmp){
         this.x = x;
         this.y = y;
-        paint = new Paint();
-        paint.setColor(Color.GRAY);
+        this.height = height;
+        image = Bitmap.createScaledBitmap(bmp, height, height, true);
     }
 
     /**
@@ -58,8 +61,8 @@ class AsteroidObject {
      * Draws the asteroid
      * @param canvas the canvas where it is to be drawn.
      */
-    void doDraw(Canvas canvas, int radius){
-        canvas.drawCircle(x,y, radius, paint);
+    void doDraw(Canvas canvas){
+        canvas.drawBitmap(image, x-(height/2), y-(height/2), null);
     }
 
 

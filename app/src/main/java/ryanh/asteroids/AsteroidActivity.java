@@ -7,6 +7,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.WindowManager;
 
@@ -23,8 +24,10 @@ public class AsteroidActivity extends AppCompatActivity implements SensorEventLi
     GameView mGameView;
 
     //variables for the phone angle.
-    double defaultAngle = 0;
+    private static int MAX_ANGLETILT = 20;
+    double defaultAngle;
     double xzAngle = 0;
+
 
     /**
      * Invoked when activity is created
@@ -106,7 +109,6 @@ public class AsteroidActivity extends AppCompatActivity implements SensorEventLi
     @Override
     public boolean onTouchEvent(MotionEvent event){
         if(mGameView.getState() != GameState.PLAYING) {
-            defaultAngle = xzAngle; //determines the angle when it was pressed for tilt purposes.
             mGameView.start();
         }
         return true;
@@ -119,33 +121,27 @@ public class AsteroidActivity extends AppCompatActivity implements SensorEventLi
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+
             //Uses x and z co-ordinates to make an angle to determine tilt
             float aX= event.values[0];
             float aZ= event.values[2];
-            xzAngle = Math.atan2(aX, aZ)/(Math.PI/180);
             if (mGameView.getState() == GameState.PLAYING){
                 //if playing, determines how far the screen is tilted from the 'default' angle.
-                //PROBLEM: this does not like it when the phone is facing straight
-                if (xzAngle < defaultAngle-10){
-                    mGameView.moveShip(true);
-                }else if(xzAngle > defaultAngle+10){
-                    mGameView.moveShip(false);
-                }
+                //PROBLEM: this does not like it when the phone is facing straight down
+                xzAngle = Math.atan2(aX, aZ)/(Math.PI/180);
+                double difference = ensureRange((int)(xzAngle- defaultAngle), -MAX_ANGLETILT, MAX_ANGLETILT);
+                mGameView.moveShip(difference/MAX_ANGLETILT );
+            } else{
+                defaultAngle = Math.atan2(aX, aZ)/(Math.PI/180);
             }
-            //how2trig
-            /*
-            xGravity = event.values[0];
-            float ZGravity = event.values[2];
-            System.out.println("x: "+event.values[0]+"\t y: "+event.values[1]+"\t z: "+event.values[2]);
-            if (mGameView.getState() == GameState.PLAYING){
-                if (xGravity < defaultXGravity-1){
-                    mGameView.moveShip(true);
-                }else if(xGravity > defaultXGravity+1){
-                    mGameView.moveShip(false);
-                }
-            }*/
         }
     }
+
+    public int ensureRange( int value, int min, int max) {
+        return Math.min(Math.max(value, min), max);
+    }
+
+
     //eh, aiming is overrated
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {

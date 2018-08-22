@@ -2,10 +2,14 @@ package ryanh.asteroids;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.SystemClock;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
@@ -21,6 +25,7 @@ import java.lang.Math;
 public class GameView extends SurfaceView implements SurfaceHolder.Callback, Runnable{
 
     private static final int TotalAsteroids = 20;
+    private static final int TotalStars = 30;
     private static final String MY_PREFS_NAME = "Highscore";
 
     private final double acceleration = 1.05;
@@ -29,13 +34,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private Random rand;
 
     private ArrayList<AsteroidObject> asteroids;
-    private ArrayList<AsteroidObject> stars = new ArrayList<>();
+    private ArrayList<Integer> starX;
+    private ArrayList<Integer> starY;
     private Ship ship;
 
     private GameState state = GameState.INITIALIZING;
 
     private SurfaceHolder holder;
     private Thread thread;
+    private boolean running = true;
     private int mCanvasWidth, mCanvasHeight = 0;
 
     private int activeAsteroids = 1;
@@ -44,9 +51,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private int score = 0;
     private int highScore = 0;
     private double speed = 2.0;
+    private double delta = 0;
 
     /**
-     * Constructor to create the GameView, initializes the ship and gets the current high score if
+     * Constructor to create the GameView and gets the current high score if
      * there was one beforehand.
      * @param context   the context of the activity
      * @param attrs     the attribute set
@@ -56,10 +64,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         this.context = context;
         holder = getHolder();
         holder.addCallback(this);
-
-        ship = new Ship(-20,0);
-
         rand = new Random();
+        asteroids = new ArrayList<>();
+        starX = new ArrayList<>();
+        starY = new ArrayList<>();
         //Grabs a highscore if it has been saved previously.
         SharedPreferences prefs = context.getSharedPreferences(MY_PREFS_NAME, 0);
         highScore = prefs.getInt("highscore", 0);
@@ -74,15 +82,38 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     /**
      * Callback when surface dimension changes, generally at the start of creation and when it regains
-     * focus. Calls function to set the surface size.
+     * focus. Calls function to set the surface size. If this is the first call, then initializes the game
      */
     @Override
     public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int w, int h) {
         setSurfaceSize(w, h);
         if(state == GameState.INITIALIZING){
-            initialize();
+
+            Bitmap shipImage1 = BitmapFactory.decodeResource(getResources(),R.drawable.spaceship_1);
+            Bitmap shipImage2 = BitmapFactory.decodeResource(getResources(),R.drawable.spaceship_2);
+            Bitmap shipImage3 = BitmapFactory.decodeResource(getResources(),R.drawable.spaceship_3);
+
+            float aspectRatio = shipImage1.getWidth() / (float) shipImage1.getHeight();
+
+            shipImage1 = Bitmap.createScaledBitmap(shipImage1, mCanvasHeight/15, Math.round((mCanvasHeight/15)/ aspectRatio), false);
+            shipImage2 = Bitmap.createScaledBitmap(shipImage2, mCanvasHeight/15, Math.round((mCanvasHeight/15)/ aspectRatio), false);
+            shipImage3 = Bitmap.createScaledBitmap(shipImage3, mCanvasHeight/15, Math.round((mCanvasHeight/15)/ aspectRatio), false);
+
+            ship = new Ship(30,mCanvasHeight/2, shipImage1, shipImage2, shipImage3);
+
+            Bitmap asteroidImage = BitmapFactory.decodeResource(getResources(), R.drawable.asteroid);
+            asteroidImage = Bitmap.createScaledBitmap(asteroidImage, mCanvasHeight/10, mCanvasHeight/10, true);
+            for (int j = 0; j < TotalAsteroids; j++) {
+                asteroids.add(new AsteroidObject(mCanvasWidth+15, rand.nextInt(mCanvasHeight), mCanvasHeight/10, asteroidImage));
+            }
+
+            for (int k=0; k < TotalStars; k++){
+                starX.add(rand.nextInt(mCanvasWidth));
+                starY.add(rand.nextInt(mCanvasHeight));
+            }
+
             state = GameState.DEFAULT;
-            unpauseGame();
+            resumeGame();
         }
     }
 
@@ -107,33 +138,40 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
      */
     @Override
     public void run(){
-        Thread myThread = Thread.currentThread();
         Canvas canvas = null;
-        try { //keeps thread running until it is interrupted.
-            while(thread== myThread) {
+        try {
+            while (running) {
+                if (!holder.getSurface().isValid()) {
+                    continue;
+                }
                 if (state == GameState.PLAYING) { //if game is in progress, update
                     update();
                 }
                 canvas = holder.lockCanvas(); //locks canvas to draw
                 doDraw(canvas);
                 holder.unlockCanvasAndPost(canvas);
-                Thread.sleep(10); //limit speed of game
-
+                try {
+                    thread.sleep(10);
+                }catch (InterruptedException e){
+                    e.printStackTrace();
+                }
             }
-        }catch(InterruptedException e){//make sure canvas is unlocked, otherwise potential boom boom.
+        }finally{
             if(holder.lockCanvas() != null){
                 holder.unlockCanvasAndPost(canvas);
             }
-        } //thread is asked to stop
+        }
     }
     /**
      * Handles the asteroid movement, collision detection, and update of total asteroids and speed.
      */
     public void update(){
+        ship.update(mCanvasHeight);
+
         //updates positions of all active asteroids and check if they have collided with the ship
         for(int i=0; i<activeAsteroids; i++){
             AsteroidObject asteroid = asteroids.get(i);
-            //simple distance check to see if a collision occured
+            //simple distance check to see if a collision occurred
             if(getDistance(ship.getX(), ship.getY(), asteroid.getX(), asteroid.getY()) <  mCanvasHeight/20){
                 lives-=1;
                 if(lives <= 0){
@@ -151,7 +189,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 score+=1; //yay
             }else{asteroid.setX(asteroid.getX()-(int)speed);} //otherwise move it by the speed
         }
-        //addition of asteroids
+         //addition of asteroids
         if(activeAsteroids < TotalAsteroids ){
             //add some variance in when the next asteroid will come out, so that the asteroids aren't
             //always the same distance from each other
@@ -161,7 +199,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 activeAsteroids+=1;
             }
 
-        }
+        }/*
         //TODO: change update of speed to be time based, rather than 'counter' based
         counter+=1;
         if(counter == 20) {
@@ -175,7 +213,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 }else{star.setX(star.getX()-1);}
             }
             counter = 0;
-        }
+        }*/
     }
 
     /**
@@ -190,18 +228,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         paint.setColor(Color.BLACK);
         canvas.drawRect(0,0,mCanvasWidth,mCanvasHeight, paint);
 
-
-        //Draw stars.
         paint.setColor(Color.WHITE);
-        for(AsteroidObject star:stars){
-            star.doDraw(canvas, 1);
+        for (int j = 0; j<TotalStars; j++){
+            canvas.drawCircle(starX.get(j), starY.get(j), 1, paint);
         }
 
         //Draws ship
         ship.doDraw(canvas);
 
         paint.setTextAlign(Paint.Align.CENTER);
-
         //Different things are drawn depending on state
         switch (state){
             case DEFAULT: //Before the first game is started
@@ -209,14 +244,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 break;
             case PLAYING: //Game is in progress, draw all active asteroids
                 for (int i=0; i<activeAsteroids;i++){
-                    asteroids.get(i).doDraw(canvas,mCanvasHeight/20);
+                    asteroids.get(i).doDraw(canvas);
                 }
                 break;
             case GAMEOVER: //Game has ended
                 canvas.drawText("GAME OVER   TOUCH SCREEN TO RESTART", mCanvasWidth / 2, mCanvasHeight / 2, paint);
                 break;
         }
-
         //Draws the lives, score and high score text
         paint.setTextAlign(Paint.Align.LEFT);
         canvas.drawText("Lives: "+lives, 10,mCanvasHeight - 10, paint);
@@ -228,68 +262,32 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
      * Initializes the game, used for the first start and subsequent restarts, then starts the game.
      */
     public void start() {
-        initialize();
+        reset();
         state = GameState.PLAYING;
-        unpauseGame();
+        resumeGame();
     }
 
-    public void initialize(){
+    public void reset(){
         score = 0;
         lives = 3;
         speed = 2;
         activeAsteroids = 1;
-        ship.setX(15);
+        ship.setX(30);
         ship.setY(mCanvasHeight/2);
-        //Asteroids and stars initialized here because canvas width/height is not known till surfaceChanged() is called.
-        asteroids = new ArrayList<>();
-        for (int i = 0; i < TotalAsteroids; i++) {
-            asteroids.add(new AsteroidObject(mCanvasWidth+15, rand.nextInt(mCanvasHeight)));
-        }
-        for(int j =0; j< 30;j++){
-            stars.add(new AsteroidObject(rand.nextInt(mCanvasWidth), rand.nextInt(mCanvasHeight)));
+        for(AsteroidObject asteroid:asteroids){
+            asteroid.setX(mCanvasWidth+15);
+            asteroid.setY(rand.nextInt(mCanvasHeight));
         }
     }
 
     /**
      * Moves the ship up or down
      * possible TODO: add dynamic acceleration depending on tilt
-     * @param up TRUE: ship needs to be moved up
+     * @param delta TRUE: ship needs to be moved up
      *           FALSE: ship needs to be moved down
      */
-    public void moveShip(boolean up){
-        if (up) {
-            if (ship.getY() > 0) {
-                ship.setY(ship.getY() - 2);
-            }
-        } else {
-            if (ship.getY() < mCanvasHeight) {
-                ship.setY(ship.getY() + 2);
-            }
-        }
-        //old code for when movement was touch based.
-       /* if(!shipIsMoving.get()) {
-            shipIsMoving.set(true);
-            Thread movingShipThread = new Thread(new Runnable() {
-                public void run() {
-                    while (shipIsMoving.get()) {
-                        if (up) {
-                            if (ship.getY() > 0) {
-                                ship.setY(ship.getY() - 1);
-                            }
-                        } else {
-                            if (ship.getY() < mCanvasHeight) {
-                                ship.setY(ship.getY() + 1);
-                            }
-                        }
-                        try {
-                            Thread.sleep(10);
-                        } catch (Exception e) {
-                        }
-                    }
-                }
-            });
-            movingShipThread.start();
-        }*/
+    public void moveShip(double delta){
+        ship.setSpeed(delta);
     }
 
 
@@ -297,13 +295,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
      * 'Pauses' the game, by killing the thread
      */
     public void pauseGame(){
+        running = false;
         thread.interrupt();
     }
 
     /**
      * 'Unpauses' the game by starting a new thread.
      */
-    public void unpauseGame(){
+    public void resumeGame(){
+        running = true;
         thread = new Thread(this);
         thread.start();
     }
@@ -336,7 +336,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
      */
     private void gameOver(){
         state = GameState.GAMEOVER;
-        ship.setX(-10);
+        ship.setX(-20);
         if (score> highScore){
             highScore = score;
             SharedPreferences.Editor editor = context.getSharedPreferences(MY_PREFS_NAME, 0).edit();
